@@ -1,4 +1,3 @@
-
 name: CI-CD Microservices
 
 on:
@@ -29,16 +28,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Course Service
-        run: |
-          cd courseservice
-          mvn clean package -DskipTests
-
-      - name: Build Enrollment Service
-        run: |
-          cd enrollmentservice
-          mvn clean package -DskipTests
-
+      # Build y Push Course Service
       - name: Build and Push Course Service
         uses: docker/build-push-action@v6
         with:
@@ -46,6 +36,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/courseservice:latest
 
+      # Build y Push Enrollment Service
       - name: Build and Push Enrollment Service
         uses: docker/build-push-action@v6
         with:
@@ -53,24 +44,52 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/enrollmentservice:latest
 
+      # Configurar llave SSH
       - name: Add SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
+      # Deploy automático en EC2
       - name: Deploy on EC2
         run: |
           ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${{ secrets.USER_SERVER }}@${{ secrets.EC2_HOST }} << EOF
 
+            # Login DockerHub
             echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-            cd Exp1_S1_Cloud
+            # =========================
+            # COURSE SERVICE
+            # =========================
 
-            docker compose pull
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/courseservice:latest
 
-            docker compose down
+            docker stop courseservice || true
+            docker rm courseservice || true
 
-            docker compose up -d
+            docker run -d \
+              --name courseservice \
+              -p 8082:8082 \
+              --restart always \
+              ${{ secrets.DOCKERHUB_USERNAME }}/courseservice:latest
+
+            # =========================
+            # ENROLLMENT SERVICE
+            # =========================
+
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/enrollmentservice:latest
+
+            docker stop enrollmentservice || true
+            docker rm enrollmentservice || true
+
+            docker run -d \
+              --name enrollmentservice \
+              -p 8083:8083 \
+              --restart always \
+              ${{ secrets.DOCKERHUB_USERNAME }}/enrollmentservice:latest
+
+            # Mostrar contenedores activos
+            docker ps
 
           EOF
