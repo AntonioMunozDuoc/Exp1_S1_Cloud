@@ -1,4 +1,3 @@
-```dockerfile
 # Etapa 1: Build
 FROM eclipse-temurin:21-jdk-alpine AS build
 
@@ -33,4 +32,3 @@ COPY wallet wallet
 EXPOSE 8082
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
-```
