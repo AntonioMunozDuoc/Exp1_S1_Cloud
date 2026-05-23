@@ -1,0 +1,23 @@
+version: '3.9'
+
+services:
+
+  courseservice:
+    build:
+      context: ./courseservice
+    container_name: courseservice
+
+    ports:
+      - "8082:8082"
+
+    restart: always
+
+  enrollmentservice:
+    build:
+      context: ./enrollmentservice
+    container_name: enrollmentservice
+
+    ports:
+      - "8083:8083"
+
+    restart: always
