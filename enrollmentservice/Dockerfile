@@ -1,3 +1,4 @@
+```dockerfile
 # Etapa 1: Build
 FROM eclipse-temurin:21-jdk-alpine AS build
 
@@ -5,6 +6,9 @@ WORKDIR /app
 
 COPY .mvn/ .mvn
 COPY mvnw pom.xml ./
+
+# Dar permisos al Maven Wrapper
+RUN chmod +x mvnw
 
 RUN ./mvnw dependency:go-offline
 
@@ -29,3 +33,4 @@ COPY wallet wallet
 EXPOSE 8083
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
+```
